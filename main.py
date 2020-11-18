@@ -117,12 +117,15 @@ def process_request(client_socket, address_client):
 
     if not method in {'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD', 'TRACE', 'CONNECT'}:
         encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
+        return
     
     if not url.startswith("/"):
         encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
+        return
 
     if not ("HTTP/1.1" == version or "HTTP/1.0" == version):
         encode_plain_file(client_socket, "pages/http_version_not_supported.html", code=505, status="HTTP Version Not Supported")
+        return
 
     print("[*]", method, url, version)
 
