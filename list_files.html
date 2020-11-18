@@ -3,15 +3,85 @@
         <title>Not found</title>
         <style>
             body {
+                margin: 0;
+                padding: 0;
                 font-family: Arial, Helvetica, sans-serif;
+            }
+            .container {
+                display: flex;
+                flex-direction: column;
+                align-self: center;
+                margin: auto;
+                margin-top: 10px;
+                
+                width: 500px;
+                padding-bottom: 10px;
+
+                border-radius: 6px;
+                overflow: hidden;
+
+                border: 1px solid #03225041;
+
+                -webkit-box-shadow: 0px 3px 29px 0px rgba(0,0,0,0.2);
+                -moz-box-shadow: 0px 3px 29px 0px rgba(0,0,0,0.2);
+                box-shadow: 0px 3px 29px 0px rgba(0,0,0,0.2);
+            }
+            .directory {
+                background: #032250;
+                padding: 15px;
+                display: inline-block;
+                color: #fff;
+                display: flex;
+
+                font-size: 22px;
+                font-family: Arial, Helvetica, sans-serif;
+                font-weight: bold;
+            }
+            .directory-name {
+                margin-left: 10px;
+            }
+            ul {
+                padding: 0;
+                margin-bottom: 15px;
+                list-style-type: none;
+            }
+            li {
+                border-left: 4px solid white;
+                /* border-radius: 6px; */
+                margin-bottom: 5;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+
+                transition: all 0.1s cubic-bezier(0.47, 0, 0.745, 0.715);
+            }
+            li:hover {
+                border-color: #032250;
+
+                box-shadow: ;
+            }
+            li img {
+                margin-left: 10px;
+                width: 20px;
+                height: 20px;
+            }
+            a {
+                display: flexbox;
+                width: 100%;
+                padding: 10px;
+                color: #000;
+                text-decoration: underline;
             }
         </style>
     </head>
     <body>
-        <h1>Files of {{directory}}</h1>
-
-        <ul>
-            {{files}}
-        </ul>
+        <div class="container">
+            <div class="directory">
+                Files of <span class="directory-name">{{directory}}</span>
+            </div>
+            <ul>
+                {{files}}
+            </ul>
+        </div>
     </body>
 </html>

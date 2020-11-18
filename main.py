@@ -38,28 +38,31 @@ def join(a, b):
     return (a + "/" + b).replace('//', "/")
 
 def encode_plain_file(socket, target, code=200, status="OK", args=None, content_type=None):
+    content = ""
+    with open(target, 'r', encoding="utf-8") as file:
+        content += "\r\n".join(file.readlines())
+    
+    if args != None:
+        for k, v in args.items():
+            content = content.replace(k, v)
+
     msg = (
         f'HTTP/1.1 {code} {status}\r\n'
         'Date: Thu, 24 Sep 2020 21:00:15 GMT\r\n'
         "Server: Jimmy's/0.0.1 (Ubuntu)\r\n"
         f'Content-Type: {content_type if content_type != None else ext_content_type(target)}\r\n'
+        f'Content-Length: {len(content.encode())}\r\n'
         '\r\n'
     )
 
-    with open(target, 'r', encoding="utf-8") as file:
-        msg += "\r\n".join(file.readlines())
-    
-    if args != None:
-        for k, v in args.items():
-            msg = msg.replace(k, v)
-
-    socket.send(msg.encode())
+    socket.send((msg + content).encode())
 
 def encode_binary(socket, target, code=200, status="OK", content_type=None):
     msg = (
         f'HTTP/1.1 {code} {status}\r\n'
         'Date: Thu, 24 Sep 2020 21:00:15 GMT\r\n'
         "Server: Jimmy's/0.0.1 (Ubuntu)\r\n"
+        f'Content-Type: {content_type if content_type != None else ext_content_type(target)}\r\n'
         '\r\n'
     )
 
@@ -83,8 +86,8 @@ def is_binary(file_name):
 def generate_list(items):
     result = ""
 
-    for name, uri in items:
-        result += '<li><a href="{0}">{1}</a></li>'.format(name, uri)
+    for name, uri, class_name in items:
+        result += '<li><img src="/assets/{2}.png"><a href="{0}">{1}</a></li>'.format(name, uri, class_name)
     
     return result
 
@@ -93,11 +96,13 @@ def process_request(client_socket, address_client):
     data = client_socket.recv(2048).decode().split("\r\n")[0].split(" ")[1]
 
     target = join(STATIC_URL, data).replace("//", "/")
-    root = "/".join(target.split("/")[:-1])
+    root = "/".join(data.split("/")[:-1])
     last = data.split("/")[-1]
+    path = "/".join(data.split("/")[:-1])
+    path = "/" if path == "" else path
 
     # Is a folder
-    if target.endswith("/") or (last in os.listdir(root) and not "." in last):
+    if os.path.isdir(target):
         # Has a index file
         if os.path.isfile(join(target, "index.html")):
             encode_plain_file(client_socket, join(target, "index.html"))
@@ -108,13 +113,16 @@ def process_request(client_socket, address_client):
 
         # Return the list of files
         else:
-            list_itemns = [
-                ( join(data, obj), join(data, obj) ,)
-                for obj in os.listdir(target)
-            ]
+            root, dirs, files = next(iter(os.walk(target)))
+
+            list_itemns = (
+                [ ( path, ".", "folder" ,) ]
+                + [ ( join(data, d), join(data, d), "folder" ,) for d in dirs]
+                + [ ( join(data, f), join(data, f), "document" ,) for f in files]
+            )
 
             args = {
-                "{{directory}}": target,
+                "{{directory}}": data,
                 "{{files}}": generate_list(list_itemns)
             }
 
