@@ -3,15 +3,11 @@ from threading import Thread
 from urllib.parse import unquote
 from socket import socket, AF_INET, SOCK_STREAM, timeout
 
-server_socket = socket(AF_INET, SOCK_STREAM)
 
-server_socket.bind(('localhost', 8080))
-
-server_socket.listen()
-server_socket.settimeout(1)
-
+PORT = 8080
 STATIC_URL = 'static'
 CHUNK_SIZE = 15000
+
 
 def ext_content_type(data):
     content_type = "text/plain"
@@ -128,8 +124,9 @@ def process_request(client_socket, address_client):
     if not ("HTTP/1.1" == version or "HTTP/1.0" == version):
         encode_plain_file(client_socket, "pages/http_version_not_supported.html", code=505, status="HTTP Version Not Supported")
 
+    print("[*]", method, url, version)
+
     target = join(STATIC_URL, url).replace("//", "/")
-    print(target)
 
     if method != "GET":
         encode_plain_file(client_socket, "pages/not_found.html", code=404, status="Not found")
@@ -151,7 +148,7 @@ def process_request(client_socket, address_client):
             _, dirs, files = next(iter(os.walk(target)))
 
             list_itemns = (
-                [ ( path, ".", "folder" ,) ]
+                [ ( path, "..", "folder" ,) ]
                 + [ ( join(url, d), d, "folder" ,) for d in dirs]
                 + [ ( join(url, f), f, "document" ,) for f in files]
             )
@@ -174,10 +171,22 @@ def process_request(client_socket, address_client):
     
     client_socket.close()
 
-while True:
-    try:
-        data = server_socket.accept()
-    except timeout:
-        continue
+if __name__ == "__main__":
+    server_socket = socket(AF_INET, SOCK_STREAM)
+    server_socket.bind(('localhost', 8080))
+    server_socket.listen()
+    server_socket.settimeout(1)
 
-    Thread(target=process_request, args=data).start()
+    if not os.path.isdir(STATIC_URL):
+        os.mkdir(STATIC_URL)
+    
+    print("[*]", "Listening in", PORT)
+    print("[*]", "Biding in", STATIC_URL)
+
+    while True:
+        try:
+            data = server_socket.accept()
+        except timeout:
+            continue
+
+        Thread(target=process_request, args=data).start()
