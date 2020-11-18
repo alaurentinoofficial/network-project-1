@@ -1,0 +1,9 @@
+<html>
+    <head>
+        <title>Pagína de index</title>
+        <meta charset="utf-8"/>
+    </head>
+    <body><h1>Pagína de index</h1>
+        <h3>Eu sou um titulo menor</h3>
+    </body>
+</html>
