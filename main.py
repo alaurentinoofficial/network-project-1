@@ -112,7 +112,7 @@ def process_request(client_socket, address_client):
     presenting_protocol = get_http_protocol(payload)
 
     if presenting_protocol == None:
-        encode_plain_file(client_socket, "bad_request.html", code=400, status="Bad request")
+        encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
     
     method, url, version = presenting_protocol
     method = method.upper()
@@ -120,19 +120,19 @@ def process_request(client_socket, address_client):
     url = unquote(url)
 
     if not method in {'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD', 'TRACE', 'CONNECT'}:
-        encode_plain_file(client_socket, "bad_request.html", code=400, status="Bad request")
+        encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
     
     if not url.startswith("/"):
-        encode_plain_file(client_socket, "bad_request.html", code=400, status="Bad request")
+        encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
 
     if not ("HTTP/1.1" == version or "HTTP/1.0" == version):
-        encode_plain_file(client_socket, "http_version_not_supported.html", code=505, status="HTTP Version Not Supported")
+        encode_plain_file(client_socket, "pages/http_version_not_supported.html", code=505, status="HTTP Version Not Supported")
 
     target = join(STATIC_URL, url).replace("//", "/")
     print(target)
 
     if method != "GET":
-        encode_plain_file(client_socket, "not_found.html", code=404, status="Not found")
+        encode_plain_file(client_socket, "pages/not_found.html", code=404, status="Not found")
 
     # Is a folder
     if os.path.isdir(target):
@@ -161,10 +161,10 @@ def process_request(client_socket, address_client):
                 "{{files}}": generate_list(list_itemns)
             }
 
-            encode_plain_file(client_socket,"list_files.html", args=args)
+            encode_plain_file(client_socket,"pages/list_files.html", args=args)
     
     elif not os.path.isfile(target):
-        encode_plain_file(client_socket, "not_found.html", code=404, status="Not found")
+        encode_plain_file(client_socket, "pages/not_found.html", code=404, status="Not found")
 
     else:
         if is_binary(target):
