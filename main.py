@@ -1,5 +1,6 @@
 import os
 from threading import Thread
+from urllib.parse import unquote
 from socket import socket, AF_INET, SOCK_STREAM, timeout
 
 server_socket = socket(AF_INET, SOCK_STREAM)
@@ -31,6 +32,8 @@ def ext_content_type(data):
         content_type = content_type = "image/gif"
     elif data.endswith(".jpeg") or data.endswith(".jpg"):
         content_type = content_type = "image/jpeg"
+    elif data.endswith(".pdf"):
+        content_type = content_type = "application/pdf"
     
     return content_type
 
@@ -58,21 +61,25 @@ def encode_plain_file(socket, target, code=200, status="OK", args=None, content_
     socket.send((msg + content).encode())
 
 def encode_binary(socket, target, code=200, status="OK", content_type=None):
+    content_type = content_type if content_type != None else ext_content_type(target)
+
     msg = (
         f'HTTP/1.1 {code} {status}\r\n'
         'Date: Thu, 24 Sep 2020 21:00:15 GMT\r\n'
         "Server: Jimmy's/0.0.1 (Ubuntu)\r\n"
-        f'Content-Type: {content_type if content_type != None else ext_content_type(target)}\r\n'
+        f'Content-Type: {content_type}\r\n'
+        f'Content-Length: {os.path.getsize(target)}\r\n'
         '\r\n'
     )
 
     socket.send(msg.encode())
 
-    with open(target, 'rb') as file:
+
+    with open(target, 'rb') as file:        
         while True:
             readed = file.read(CHUNK_SIZE)
 
-            if readed: socket.send(file.read())
+            if readed: socket.send(readed)
             else: break
 
 def is_binary(file_name):
@@ -91,15 +98,37 @@ def generate_list(items):
     
     return result
 
-def process_request(client_socket, address_client):
-    # Get URL
-    data = client_socket.recv(2048).decode().split("\r\n")[0].split(" ")[1]
+def get_http_protocol(payload):
+    rows = payload.split('\r\n')
 
-    target = join(STATIC_URL, data).replace("//", "/")
-    root = "/".join(data.split("/")[:-1])
-    last = data.split("/")[-1]
-    path = "/".join(data.split("/")[:-1])
-    path = "/" if path == "" else path
+    if len(rows) > 0:
+        if len(rows[0].split(" ")) == 3:
+            return tuple(rows[0].split(" "))
+    
+    return None
+
+def process_request(client_socket, address_client):
+    payload = client_socket.recv(2048).decode('ascii')
+    presenting_protocol = get_http_protocol(payload)
+
+    if presenting_protocol == None:
+        encode_plain_file(client_socket, "bad_request.html", code=400, status="Bad request")
+    
+    method, url, version = presenting_protocol
+
+    if not method.upper() in {'GET', 'PUT', 'POST', 'DELETE', 'PATCH'}:
+        encode_plain_file(client_socket, "bad_request.html", code=400, status="Bad request")
+    
+    if not url.startswith("/"):
+        encode_plain_file(client_socket, "bad_request.html", code=400, status="Bad request")
+
+    if not ("HTTP/1.1" == version or "HTTP/1.0" == version):
+        encode_plain_file(client_socket, "bad_request.html", code=505, status="HTTP Version Not Supported")
+
+    # 
+    url = unquote(url)
+    target = join(STATIC_URL, url).replace("//", "/")
+    print(target)
 
     # Is a folder
     if os.path.isdir(target):
@@ -113,16 +142,18 @@ def process_request(client_socket, address_client):
 
         # Return the list of files
         else:
-            root, dirs, files = next(iter(os.walk(target)))
+            path = "/".join(url.split("/")[:-1])
+            path = "/" if path == "" else path
+            _, dirs, files = next(iter(os.walk(target)))
 
             list_itemns = (
                 [ ( path, ".", "folder" ,) ]
-                + [ ( join(data, d), join(data, d), "folder" ,) for d in dirs]
-                + [ ( join(data, f), join(data, f), "document" ,) for f in files]
+                + [ ( join(url, d), d, "folder" ,) for d in dirs]
+                + [ ( join(url, f), f, "document" ,) for f in files]
             )
 
             args = {
-                "{{directory}}": data,
+                "{{directory}}": url,
                 "{{files}}": generate_list(list_itemns)
             }
 
