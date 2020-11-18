@@ -115,20 +115,24 @@ def process_request(client_socket, address_client):
         encode_plain_file(client_socket, "bad_request.html", code=400, status="Bad request")
     
     method, url, version = presenting_protocol
+    method = method.upper()
+    version = version.upper()
+    url = unquote(url)
 
-    if not method.upper() in {'GET', 'PUT', 'POST', 'DELETE', 'PATCH'}:
+    if not method in {'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD', 'TRACE', 'CONNECT'}:
         encode_plain_file(client_socket, "bad_request.html", code=400, status="Bad request")
     
     if not url.startswith("/"):
         encode_plain_file(client_socket, "bad_request.html", code=400, status="Bad request")
 
     if not ("HTTP/1.1" == version or "HTTP/1.0" == version):
-        encode_plain_file(client_socket, "bad_request.html", code=505, status="HTTP Version Not Supported")
+        encode_plain_file(client_socket, "http_version_not_supported.html", code=505, status="HTTP Version Not Supported")
 
-    # 
-    url = unquote(url)
     target = join(STATIC_URL, url).replace("//", "/")
     print(target)
+
+    if method != "GET":
+        encode_plain_file(client_socket, "not_found.html", code=404, status="Not found")
 
     # Is a folder
     if os.path.isdir(target):
