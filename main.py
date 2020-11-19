@@ -104,75 +104,79 @@ def get_http_protocol(payload):
     return None
 
 def process_request(client_socket, address_client):
-    payload = client_socket.recv(2048).decode('ascii')
-    presenting_protocol = get_http_protocol(payload)
+    try:
+        payload = client_socket.recv(2048).decode('ascii')
+        presenting_protocol = get_http_protocol(payload)
 
-    if presenting_protocol == None:
-        encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
-    
-    method, url, version = presenting_protocol
-    method = method.upper()
-    version = version.upper()
-    url = unquote(url)
+        if presenting_protocol == None:
+            encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
 
-    if not method in {'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD', 'TRACE', 'CONNECT'}:
-        encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
-        return
-    
-    if not url.startswith("/"):
-        encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
-        return
+        method, url, version = presenting_protocol
+        method = method.upper()
+        version = version.upper()
+        url = unquote(url)
 
-    if not ("HTTP/1.1" == version or "HTTP/1.0" == version):
-        encode_plain_file(client_socket, "pages/http_version_not_supported.html", code=505, status="HTTP Version Not Supported")
-        return
-
-    print("[*]", method, url, version)
-
-    target = join(STATIC_URL, url).replace("//", "/")
-
-    if method != "GET":
-        encode_plain_file(client_socket, "pages/not_found.html", code=404, status="Not found")
-
-    # Is a folder
-    if os.path.isdir(target):
-        # Has a index file
-        if os.path.isfile(join(target, "index.html")):
-            encode_plain_file(client_socket, join(target, "index.html"))
+        if not method in {'GET', 'PUT', 'POST', 'DELETE', 'PATCH', 'HEAD', 'TRACE', 'CONNECT'}:
+            encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
+            return
         
-        # Has a index file
-        elif os.path.isfile(join(target, "index.htm")):
-            encode_plain_file(client_socket, join(target, "index.htm"))
+        if not url.startswith("/"):
+            encode_plain_file(client_socket, "pages/bad_request.html", code=400, status="Bad request")
+            return
 
-        # Return the list of files
+        if not ("HTTP/1.1" == version or "HTTP/1.0" == version):
+            encode_plain_file(client_socket, "pages/http_version_not_supported.html", code=505, status="HTTP Version Not Supported")
+            return
+
+        print("[*]", method, url, version)
+
+        target = join(STATIC_URL, url).replace("//", "/")
+
+        if method != "GET":
+            encode_plain_file(client_socket, "pages/not_found.html", code=404, status="Not found")
+
+        # Is a folder
+        if os.path.isdir(target):
+            # Has a index file
+            if os.path.isfile(join(target, "index.html")):
+                encode_plain_file(client_socket, join(target, "index.html"))
+            
+            # Has a index file
+            elif os.path.isfile(join(target, "index.htm")):
+                encode_plain_file(client_socket, join(target, "index.htm"))
+
+            # Return the list of files
+            else:
+                path = "/".join(url.split("/")[:-1])
+                path = "/" if path == "" else path
+                _, dirs, files = next(iter(os.walk(target)))
+
+                list_itemns = (
+                    [ ( path, "..", "folder" ,) ]
+                    + [ ( join(url, d), d, "folder" ,) for d in dirs]
+                    + [ ( join(url, f), f, "document" ,) for f in files]
+                )
+
+                args = {
+                    "{{directory}}": url,
+                    "{{files}}": generate_list(list_itemns)
+                }
+
+                encode_plain_file(client_socket,"pages/list_files.html", args=args)
+        
+        elif not os.path.isfile(target):
+            encode_plain_file(client_socket, "pages/not_found.html", code=404, status="Not found")
+
         else:
-            path = "/".join(url.split("/")[:-1])
-            path = "/" if path == "" else path
-            _, dirs, files = next(iter(os.walk(target)))
-
-            list_itemns = (
-                [ ( path, "..", "folder" ,) ]
-                + [ ( join(url, d), d, "folder" ,) for d in dirs]
-                + [ ( join(url, f), f, "document" ,) for f in files]
-            )
-
-            args = {
-                "{{directory}}": url,
-                "{{files}}": generate_list(list_itemns)
-            }
-
-            encode_plain_file(client_socket,"pages/list_files.html", args=args)
+            if is_binary(target):
+                encode_binary(client_socket, target)
+            else:
+                encode_plain_file(client_socket, target)
+        
+        client_socket.close()
+    except:
+        client_socket.close()
     
-    elif not os.path.isfile(target):
-        encode_plain_file(client_socket, "pages/not_found.html", code=404, status="Not found")
-
-    else:
-        if is_binary(target):
-            encode_binary(client_socket, target)
-        else:
-            encode_plain_file(client_socket, target)
-    
-    client_socket.close()
 
 if __name__ == "__main__":
     server_socket = socket(AF_INET, SOCK_STREAM)
