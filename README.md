@@ -37,11 +37,16 @@ Other thing super important it is to be capble to download large files using thr
 
 Other valueble aspect it is interpret files properly in the browser using the variateted content types, as plain text or binary, like HTML, json, pdf, mp3, wav, mp4 and other.
 
-![html](/assets/html.png)
-*html file*
+<p align="center">
+  <img width="460" height="250" src="/assets/html.png">
+  <br>
+  <em>html</em>
+</p>
 
-![pdf](/assets/pdf.png)
-*pdf file*
+<p align="center">
+  <img width="460" height="250" src="/assets/mp3.png">
+</p>
 
-![mp3](/assets/mp3.png)
-*mp3 file*
+<p align="center">
+  <img width="460" height="300" src="/assets/pdf.png">
+</p>
