@@ -6,7 +6,7 @@ from socket import socket, AF_INET, SOCK_STREAM, timeout
 
 PORT = 8080
 STATIC_URL = 'static'
-CHUNK_SIZE = 15000
+CHUNK_SIZE = 50000
 
 
 def ext_content_type(data):
