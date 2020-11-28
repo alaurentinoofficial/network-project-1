@@ -29,7 +29,9 @@ If in a folder there is a index.html, this file is redereded by default, otherwi
 
 Other thing super important it is to be capble to download large files using thread and sending the chucks little by little to do not overflow the server memory.
 
-![download](/assets/download.png)
+<p align="center">
+  <img width="380" height="240" src="/assets/download.png">
+</p>
 
 <br>
 
@@ -45,8 +47,12 @@ Other valueble aspect it is interpret files properly in the browser using the va
 
 <p align="center">
   <img width="460" height="250" src="/assets/mp3.png">
+  <br>
+  <em>mp3</em>
 </p>
 
 <p align="center">
   <img width="460" height="300" src="/assets/pdf.png">
+  <br>
+  <em>pdf</em>
 </p>
